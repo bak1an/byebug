@@ -12,12 +12,12 @@ module Byebug
     self.allow_in_post_mortem = true
 
     def self.regexp
-      /^\s* (?:w(?:here)?|bt|backtrace) \s*$/x
+      /^\s* (?:w(?:here)?|bt|backtrace)\s*(.*)\s*$/x
     end
 
     def self.description
       <<-DESCRIPTION
-        w[here]|bt|backtrace
+        w[here]|bt|backtrace [pattern]
 
         #{short_description}
 
@@ -35,6 +35,7 @@ module Byebug
     end
 
     def execute
+      @pattern = @match[1]
       print_backtrace
     end
 
@@ -42,7 +43,10 @@ module Byebug
 
     def print_backtrace
       bt = prc('frame.line', (0...context.stack_size)) do |_, index|
-        Frame.new(context, index).to_hash
+        frame = Frame.new(context, index)
+        if @pattern.nil? || @pattern.empty? || frame.deco_file.include?(@pattern)
+          frame.to_hash
+        end
       end
 
       print(bt)
